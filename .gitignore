@@ -2,3 +2,5 @@ index.html
 .env
 package-lock.json
 node_modules/
+gps.ino
+gsm.ino

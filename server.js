@@ -1,22 +1,19 @@
-// GPS Tracking Server with MongoDB and WebSocket
-// Install: npm install express mongoose ws body-parser cors
+
 
 const express = require('express');
 const mongoose = require('mongoose');
 const WebSocket = require('ws');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-
+require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(cors());
 app.use(bodyParser.json());
-require('dotenv').config();
 
 
-// MongoDB Connection
+
 const MONGODB_URI = process.env.MONGODB_URI;
 mongoose.connect(MONGODB_URI, {
 }).then(() => {
@@ -25,7 +22,7 @@ mongoose.connect(MONGODB_URI, {
   console.error('✗ MongoDB connection error:', err);
 });
 
-// GPS Data Schema
+
 const gpsDataSchema = new mongoose.Schema({
   device_id: { type: String, required: true, index: true },
   timestamp: { type: Date, required: true, index: true },
@@ -40,12 +37,11 @@ const gpsDataSchema = new mongoose.Schema({
 
 const GPSData = mongoose.model('GPSData', gpsDataSchema);
 
-// HTTP Endpoint for receiving GPS data from ESP32
+
 app.post('/api/gps', async (req, res) => {
   try {
     console.log('📍 Received GPS data:', req.body);
     
-    // Save to MongoDB
     const gpsData = new GPSData({
       device_id: req.body.device_id,
       timestamp: req.body.timestamp || new Date(),
@@ -60,7 +56,6 @@ app.post('/api/gps', async (req, res) => {
     await gpsData.save();
     console.log('✓ Data saved to MongoDB');
     
-    // Broadcast to WebSocket clients
     broadcastToClients({
       type: 'gps_update',
       data: gpsData
@@ -80,7 +75,6 @@ app.post('/api/gps', async (req, res) => {
   }
 });
 
-// Get latest location for a device
 app.get('/api/gps/latest/:device_id', async (req, res) => {
   try {
     const latestData = await GPSData
@@ -103,7 +97,6 @@ app.get('/api/gps/latest/:device_id', async (req, res) => {
   }
 });
 
-// Get location history
 app.get('/api/gps/history/:device_id', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;
@@ -130,7 +123,7 @@ app.get('/api/gps/history/:device_id', async (req, res) => {
   }
 });
 
-// Get all devices
+
 app.get('/api/devices', async (req, res) => {
   try {
     const devices = await GPSData.distinct('device_id');
@@ -143,7 +136,7 @@ app.get('/api/devices', async (req, res) => {
   }
 });
 
-// Health check
+
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
